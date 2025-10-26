@@ -235,33 +235,41 @@ io.on('connection', (socket) => {
             if (room) {
                 const user = room.users.find(u => u.id === socket.id);
                 if (user) {
-                    // Combine all chunks
-                    const completeVideo = upload.receivedChunks.join('');
+                    // Create videos directory if it doesn't exist
+                    const videosDir = path.join(__dirname, 'videos');
+                    if (!fs.existsSync(videosDir)) {
+                        fs.mkdirSync(videosDir);
+                    }
+
+                    // Combine all chunks and convert to buffer
+                    const base64Data = upload.receivedChunks.join('');
+                    const buffer = Buffer.from(base64Data, 'base64');
+
+                    // Save video to disk
+                    const safeFileName = upload.fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    const filePath = path.join(videosDir, safeFileName);
+                    fs.writeFileSync(filePath, buffer);
+                    const videoPath = `/videos/${safeFileName}`;
 
                     // Store video data for this room
                     roomVideos.set(upload.roomId, {
-                        data: completeVideo,
+                        path: videoPath,
                         fileName: upload.fileName,
                         fileSize: upload.fileSize,
-                        uploader: user.username
+                        uploader: user.username,
+                        isLibrary: true
                     });
 
-                    console.log(`✅ Video "${upload.fileName}" (${(upload.fileSize / (1024 * 1024)).toFixed(2)} MB) uploaded to room ${upload.roomId} by ${user.username}`);
+                    console.log(`✅ Video "${upload.fileName}" (${(upload.fileSize / (1024 * 1024)).toFixed(2)} MB) uploaded to room ${upload.roomId} by ${user.username} and saved to disk`);
 
                     // Clean up chunks
                     videoChunks.delete(uploadId);
 
-                    // Send video to all OTHER users in room (excluding uploader)
-                    socket.to(upload.roomId).emit('loadRoomVideo', {
-                        videoData: completeVideo,
+                    // Notify all users in room to load this video
+                    io.to(upload.roomId).emit('loadLibraryVideo', {
+                        videoPath: videoPath,
                         fileName: upload.fileName,
                         uploader: user.username
-                    });
-
-                    // Notify all users about the video load (including uploader)
-                    io.to(upload.roomId).emit('videoLoaded', {
-                        username: user.username,
-                        fileName: upload.fileName
                     });
 
                     socket.emit('videoUploadSuccess', { uploadId });

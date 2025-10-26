@@ -208,10 +208,12 @@ async function uploadVideoInChunks(file) {
 
             const reader = new FileReader();
             reader.onload = (e) => {
+                // Extract base64 data from data URL by removing the prefix
+                const base64Data = e.target.result.split(',')[1];
                 socket.emit('videoUploadChunk', {
                     uploadId: uploadId,
                     chunkIndex: chunkToSend,
-                    chunkData: e.target.result
+                    chunkData: base64Data
                 });
                 activeUploads--;
                 sendNextChunk(); // Send next chunk
