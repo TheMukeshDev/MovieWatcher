@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watch Party - Watch Together</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🎬 Watch Party</h1>
+            <p class="tagline">Watch videos together with friends in real-time</p>
+        </header>
+
+        <!-- Room Selection Screen -->
+        <div id="roomSelection" class="screen active">
+            <div class="card">
+                <h2>Join or Create a Room</h2>
+                <div id="connectionStatus" class="connection-status disconnected">
+                    ⚠️ Not connected to server - Make sure you're accessing <strong>http://localhost:3000</strong>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="usernameInput" placeholder="Enter your username" required>
+                </div>
+                <div class="input-group">
+                    <input type="text" id="roomIdInput" placeholder="Enter Room ID (leave blank to create new)">
+                </div>
+                <button id="joinRoomBtn" class="btn btn-primary">Join/Create Room</button>
+            </div>
+        </div>
+
+        <!-- Watch Party Room -->
+        <div id="watchPartyRoom" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <h3>Room: <span id="currentRoomId"></span></h3>
+                </div>
+                <div class="header-users">
+                    <button id="toggleUsersBtn" class="btn btn-users">
+                        👥 Online Users (<span id="userCount">0</span>)
+                    </button>
+                    <div id="usersDropdown" class="users-dropdown hidden">
+                        <ul id="usersList"></ul>
+                    </div>
+                </div>
+                <button id="leaveRoomBtn" class="btn btn-secondary">Leave Room</button>
+            </div>
+
+            <div class="main-content">
+                <!-- Video Section -->
+                <div class="video-section">
+                    <!-- Video Controls -->
+                    <div class="video-controls-section">
+                        <div class="upload-section">
+                            <button id="shareScreenBtn" class="btn btn-screen-share"
+                                title="Share your screen with everyone in the room (Chrome/Edge/Firefox required)">
+                                🖥️ Share Screen
+                            </button>
+                            <button id="libraryBtn" class="btn btn-library"
+                                title="Select a video from the server library">
+                                📚 Video Library
+                            </button>
+                            <label for="videoUpload" class="btn btn-upload" id="uploadBtn"
+                                title="Upload a video file to watch together">
+                                📁 Upload Video
+                                <input type="file" id="videoUpload" accept="video/*" hidden>
+                            </label>
+                            <span id="videoFileName">No video selected</span>
+                            <span id="uploadProgress" class="upload-progress hidden">Uploading...</span>
+                        </div>
+                        <div class="sync-info">
+                            <span id="syncStatus" class="sync-status">⚡ Synced</span>
+                        </div>
+                    </div>
+
+                    <div class="video-container">
+                        <video id="videoPlayer" controls>
+                            <source id="videoSource" src="" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <div id="videoOverlay" class="video-overlay">
+                            <p>Upload a video to start watching together</p>
+                        </div>
+                    </div>
+
+                    <!-- Video Library Modal -->
+                    <div id="libraryModal" class="modal hidden">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>📚 Video Library</h3>
+                                <button id="closeLibrary" class="close-btn">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="libraryLoading" class="loading">Loading videos...</div>
+                                <div id="libraryVideos" class="library-videos hidden"></div>
+                                <div id="libraryEmpty" class="library-empty hidden">
+                                    <p>No videos found in the videos folder.</p>
+                                    <p>Add video files to the <code>videos/</code> folder on the server.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Screen Share Indicator -->
+                    <div id="screenShareIndicator" class="screen-share-indicator hidden">
+                        <span id="screenShareUser"></span> is sharing screen
+                    </div>
+                </div>
+
+                <!-- Chat Section -->
+                <div class="chat-section">
+                    <div class="chat-header">
+                        <h4>💬 Chat</h4>
+                    </div>
+                    <div id="chatMessages" class="chat-messages"></div>
+
+                    <!-- Emoji/Sticker Picker -->
+                    <div id="emojiPicker" class="emoji-picker hidden">
+                        <div class="picker-tabs">
+                            <button class="picker-tab active" data-tab="emoji">😊 Emoji</button>
+                            <button class="picker-tab" data-tab="sticker">🎨 Sticker</button>
+                        </div>
+                        <div class="picker-content">
+                            <div id="emojiTab" class="picker-tab-content active">
+                                <div class="emoji-grid">
+                                    <span class="emoji-item">😀</span>
+                                    <span class="emoji-item">😂</span>
+                                    <span class="emoji-item">🥵</span>
+                                    <span class="emoji-item">🤣</span>
+                                    <span class="emoji-item">😊</span>
+                                    <span class="emoji-item">😍</span>
+                                    <span class="emoji-item">🥰</span>
+                                    <span class="emoji-item">😘</span>
+                                    <span class="emoji-item">😎</span>
+                                    <span class="emoji-item">🤔</span>
+                                    <span class="emoji-item">😴</span>
+                                    <span class="emoji-item">😢</span>
+                                    <span class="emoji-item">😭</span>
+                                    <span class="emoji-item">😡</span>
+                                    <span class="emoji-item">🤯</span>
+                                    <span class="emoji-item">😱</span>
+                                    <span class="emoji-item">👍</span>
+                                    <span class="emoji-item">👎</span>
+                                    <span class="emoji-item">👏</span>
+                                    <span class="emoji-item">🙌</span>
+                                    <span class="emoji-item">✌️</span>
+                                    <span class="emoji-item">❤️</span>
+                                    <span class="emoji-item">💔</span>
+                                    <span class="emoji-item">🔥</span>
+                                    <span class="emoji-item">⭐</span>
+                                    <span class="emoji-item">✨</span>
+                                    <span class="emoji-item">💯</span>
+                                    <span class="emoji-item">🎉</span>
+                                    <span class="emoji-item">🎊</span>
+                                    <span class="emoji-item">🎈</span>
+                                    <span class="emoji-item">🍕</span>
+                                    <span class="emoji-item">🍔</span>
+                                    <span class="emoji-item">🍿</span>
+                                    <span class="emoji-item">☕</span>
+                                    <span class="emoji-item">🎮</span>
+                                    <span class="emoji-item">🎬</span>
+                                    <span class="emoji-item">🎵</span>
+                                </div>
+                            </div>
+                            <div id="stickerTab" class="picker-tab-content">
+                                <div class="sticker-grid">
+                                    <div class="sticker-item" data-sticker="👋">👋<br><small>Wave</small></div>
+                                    <div class="sticker-item" data-sticker="🙏">🙏<br><small>Thanks</small></div>
+                                    <div class="sticker-item" data-sticker="💪">💪<br><small>Strong</small></div>
+                                    <div class="sticker-item" data-sticker="🎯">🎯<br><small>Goal</small></div>
+                                    <div class="sticker-item" data-sticker="🚀">🚀<br><small>Launch</small></div>
+                                    <div class="sticker-item" data-sticker="⚡">⚡<br><small>Fast</small></div>
+                                    <div class="sticker-item" data-sticker="🌟">🌟<br><small>Star</small></div>
+                                    <div class="sticker-item" data-sticker="💡">💡<br><small>Idea</small></div>
+                                    <div class="sticker-item" data-sticker="🎪">🎪<br><small>Fun</small></div>
+                                    <div class="sticker-item" data-sticker="🎭">🎭<br><small>Drama</small></div>
+                                    <div class="sticker-item" data-sticker="🌈">🌈<br><small>Rainbow</small></div>
+                                    <div class="sticker-item" data-sticker="⚽">⚽<br><small>Soccer</small></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <button id="emojiBtn" class="btn btn-emoji" title="Emoji & Stickers">😊</button>
+                        <label for="imageUpload" class="btn btn-image" title="Send Image">
+                            📷
+                            <input type="file" id="imageUpload" accept="image/*" hidden>
+                        </label>
+                        <input type="text" id="chatInput" placeholder="Type a message..." maxlength="500">
+                        <button id="sendMessageBtn" class="btn btn-send">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+
+</html>
