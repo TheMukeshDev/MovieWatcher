@@ -49,10 +49,11 @@ app.use(express.urlencoded({ limit: '1gb', extended: true }));
 app.use(express.static(path.join(__dirname)));
 
 // Serve videos folder with proper MIME types
-app.use('/videos', (req, res, next) => {
-    res.setHeader('Content-Type', 'video/mp4');
-    express.static(path.join(__dirname, 'videos'))(req, res, next);
-});
+app.use('/videos', express.static(path.join(__dirname, 'videos'), {
+    setHeaders: (res, path) => {
+        res.setHeader('Content-Type', 'video/mp4');
+    }
+}));
 
 // Store active rooms and users
 const rooms = new Map();
@@ -355,137 +356,137 @@ io.on('connection', (socket) => {
             });
         }
     }
-    });
+    );
 
-// Video Play
-socket.on('videoPlay', (data) => {
-    const { roomId, currentTime } = data;
-    const room = rooms.get(roomId);
+    // Video Play
+    socket.on('videoPlay', (data) => {
+        const { roomId, currentTime } = data;
+        const room = rooms.get(roomId);
 
-    if (room) {
-        room.videoState.isPlaying = true;
-        room.videoState.currentTime = currentTime;
+        if (room) {
+            room.videoState.isPlaying = true;
+            room.videoState.currentTime = currentTime;
 
-        // Sync play with other users
-        socket.to(roomId).emit('syncVideoPlay', {
-            currentTime: currentTime
-        });
-    }
-});
-
-// Video Pause
-socket.on('videoPause', (data) => {
-    const { roomId, currentTime } = data;
-    const room = rooms.get(roomId);
-
-    if (room) {
-        room.videoState.isPlaying = false;
-        room.videoState.currentTime = currentTime;
-
-        // Sync pause with other users
-        socket.to(roomId).emit('syncVideoPause', {
-            currentTime: currentTime
-        });
-    }
-});
-
-// Video Seek
-socket.on('videoSeek', (data) => {
-    const { roomId, currentTime } = data;
-    const room = rooms.get(roomId);
-
-    if (room) {
-        room.videoState.currentTime = currentTime;
-
-        // Sync seek with other users
-        socket.to(roomId).emit('syncVideoSeek', {
-            currentTime: currentTime
-        });
-    }
-});
-
-// Chat Message
-socket.on('chatMessage', (data) => {
-    const { roomId, username, message, messageType, timestamp } = data;
-
-    // Validate message type
-    const validTypes = ['text', 'image', 'sticker', 'emoji'];
-    const type = validTypes.includes(messageType) ? messageType : 'text';
-
-    // Broadcast message to all users in room (including sender)
-    io.to(roomId).emit('receiveMessage', {
-        username: username,
-        message: message,
-        messageType: type,
-        timestamp: timestamp
-    });
-
-    // Log message (truncate images for readability)
-    const logMessage = type === 'image' ? '[Image]' : message;
-    console.log(`[${roomId}] ${username} (${type}): ${logMessage}`);
-});
-
-// Screen Sharing - Start
-socket.on('startScreenShare', (data) => {
-    const { roomId, username } = data;
-    console.log(`🖥️ ${username} started screen sharing in room ${roomId}`);
-
-    // Notify all users in room that screen sharing started
-    socket.to(roomId).emit('userStartedScreenShare', {
-        username: username,
-        userId: socket.id
-    });
-});
-
-// Screen Sharing - Stop
-socket.on('stopScreenShare', (data) => {
-    const { roomId, username } = data;
-    console.log(`🖥️ ${username} stopped screen sharing in room ${roomId}`);
-
-    // Notify all users in room that screen sharing stopped
-    socket.to(roomId).emit('userStoppedScreenShare', {
-        username: username,
-        userId: socket.id
-    });
-});
-
-// Screen Sharing - Stream data
-socket.on('screenShareStream', (data) => {
-    const { roomId, streamData } = data;
-
-    // Broadcast screen share stream to other users
-    socket.to(roomId).emit('receiveScreenShare', {
-        streamData: streamData,
-        userId: socket.id
-    });
-});
-
-// Disconnect
-socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-
-    // Find and remove user from all rooms
-    rooms.forEach((room, roomId) => {
-        const userIndex = room.users.findIndex(u => u.id === socket.id);
-        if (userIndex !== -1) {
-            const username = room.users[userIndex].username;
-            room.users.splice(userIndex, 1);
-
-            // Notify remaining users
-            io.to(roomId).emit('userLeft', {
-                username: username,
-                users: room.users
+            // Sync play with other users
+            socket.to(roomId).emit('syncVideoPlay', {
+                currentTime: currentTime
             });
-
-            // Delete room if empty
-            if (room.users.length === 0) {
-                rooms.delete(roomId);
-                roomVideos.delete(roomId); // Clean up video data
-                console.log(`Room ${roomId} deleted (empty)`);
-            }
         }
     });
-});
+
+    // Video Pause
+    socket.on('videoPause', (data) => {
+        const { roomId, currentTime } = data;
+        const room = rooms.get(roomId);
+
+        if (room) {
+            room.videoState.isPlaying = false;
+            room.videoState.currentTime = currentTime;
+
+            // Sync pause with other users
+            socket.to(roomId).emit('syncVideoPause', {
+                currentTime: currentTime
+            });
+        }
+    });
+
+    // Video Seek
+    socket.on('videoSeek', (data) => {
+        const { roomId, currentTime } = data;
+        const room = rooms.get(roomId);
+
+        if (room) {
+            room.videoState.currentTime = currentTime;
+
+            // Sync seek with other users
+            socket.to(roomId).emit('syncVideoSeek', {
+                currentTime: currentTime
+            });
+        }
+    });
+
+    // Chat Message
+    socket.on('chatMessage', (data) => {
+        const { roomId, username, message, messageType, timestamp } = data;
+
+        // Validate message type
+        const validTypes = ['text', 'image', 'sticker', 'emoji'];
+        const type = validTypes.includes(messageType) ? messageType : 'text';
+
+        // Broadcast message to all users in room (including sender)
+        io.to(roomId).emit('receiveMessage', {
+            username: username,
+            message: message,
+            messageType: type,
+            timestamp: timestamp
+        });
+
+        // Log message (truncate images for readability)
+        const logMessage = type === 'image' ? '[Image]' : message;
+        console.log(`[${roomId}] ${username} (${type}): ${logMessage}`);
+    });
+
+    // Screen Sharing - Start
+    socket.on('startScreenShare', (data) => {
+        const { roomId, username } = data;
+        console.log(`🖥️ ${username} started screen sharing in room ${roomId}`);
+
+        // Notify all users in room that screen sharing started
+        socket.to(roomId).emit('userStartedScreenShare', {
+            username: username,
+            userId: socket.id
+        });
+    });
+
+    // Screen Sharing - Stop
+    socket.on('stopScreenShare', (data) => {
+        const { roomId, username } = data;
+        console.log(`🖥️ ${username} stopped screen sharing in room ${roomId}`);
+
+        // Notify all users in room that screen sharing stopped
+        socket.to(roomId).emit('userStoppedScreenShare', {
+            username: username,
+            userId: socket.id
+        });
+    });
+
+    // Screen Sharing - Stream data
+    socket.on('screenShareStream', (data) => {
+        const { roomId, streamData } = data;
+
+        // Broadcast screen share stream to other users
+        socket.to(roomId).emit('receiveScreenShare', {
+            streamData: streamData,
+            userId: socket.id
+        });
+    });
+
+    // Disconnect
+    socket.on('disconnect', () => {
+        console.log('User disconnected:', socket.id);
+
+        // Find and remove user from all rooms
+        rooms.forEach((room, roomId) => {
+            const userIndex = room.users.findIndex(u => u.id === socket.id);
+            if (userIndex !== -1) {
+                const username = room.users[userIndex].username;
+                room.users.splice(userIndex, 1);
+
+                // Notify remaining users
+                io.to(roomId).emit('userLeft', {
+                    username: username,
+                    users: room.users
+                });
+
+                // Delete room if empty
+                if (room.users.length === 0) {
+                    rooms.delete(roomId);
+                    roomVideos.delete(roomId); // Clean up video data
+                    console.log(`Room ${roomId} deleted (empty)`);
+                }
+            }
+        });
+    });
 });
 
 // Helper function to handle user leaving

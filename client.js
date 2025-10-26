@@ -608,31 +608,38 @@ socket.on('userLeft', (data) => {
 socket.on('loadRoomVideo', (data) => {
     console.log('📥 Receiving video from server...', data.fileName);
 
-    try {
-        // Convert base64 to blob
-        const byteCharacters = atob(data.videoData);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-            byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'video/mp4' });
-        const videoUrl = URL.createObjectURL(blob);
+    if (data.videoData) {
+        try {
+            // Convert base64 to blob
+            const byteCharacters = atob(data.videoData);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'video/mp4' });
+            const videoUrl = URL.createObjectURL(blob);
 
-        // Set video source
+            // Set video source
+            videoSource.type = 'video/mp4';
+            videoSource.src = videoUrl;
+        } catch (e) {
+            console.error('Error converting video data:', e);
+            // Fallback to direct URL if blob creation fails
+            videoSource.type = 'video/mp4';
+            videoSource.src = data.videoData;
+        }
+    } else {
+        // Handle direct URL
         videoSource.type = 'video/mp4';
-        videoSource.src = videoUrl;
-        videoPlayer.load();
-        videoFileName.textContent = data.fileName;
-        videoOverlay.classList.add('hidden');
-        isVideoLoaded = true;
-    } catch (e) {
-        console.error('Error loading video:', e);
-        addSystemMessage('❌ Error loading video. Please try again.');
-        return;
+        videoSource.src = data.videoPath || data.videoData;
     }
 
-    addSystemMessage(`${data.uploader} shared video: ${data.fileName}`);
+    // Load and show video
+    videoPlayer.load();
+    videoFileName.textContent = data.fileName;
+    videoOverlay.classList.add('hidden');
+    isVideoLoaded = true; addSystemMessage(`${data.uploader} shared video: ${data.fileName}`);
 });
 
 // Handle server-side upload assembly errors
