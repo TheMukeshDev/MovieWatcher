@@ -608,26 +608,29 @@ socket.on('userLeft', (data) => {
 socket.on('loadRoomVideo', (data) => {
     console.log('📥 Receiving video from server...', data.fileName);
 
-    // Load the video data from the server
-    // If server sent a data URL, extract mime and set the <source> type so the player knows the codec
-    if (typeof data.videoData === 'string' && data.videoData.startsWith('data:')) {
-        const m = data.videoData.match(/^data:([^;]+);base64,/);
-        if (m && m[1]) {
-            videoSource.type = m[1];
-        } else {
-            videoSource.removeAttribute('type');
+    try {
+        // Convert base64 to blob
+        const byteCharacters = atob(data.videoData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        videoSource.src = data.videoData;
-    } else {
-        // Otherwise assume it's a URL path
-        videoSource.removeAttribute('type');
-        videoSource.src = data.videoData;
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'video/mp4' });
+        const videoUrl = URL.createObjectURL(blob);
+
+        // Set video source
+        videoSource.type = 'video/mp4';
+        videoSource.src = videoUrl;
+        videoPlayer.load();
+        videoFileName.textContent = data.fileName;
+        videoOverlay.classList.add('hidden');
+        isVideoLoaded = true;
+    } catch (e) {
+        console.error('Error loading video:', e);
+        addSystemMessage('❌ Error loading video. Please try again.');
+        return;
     }
-    // Reload player to pick up new source
-    try { videoPlayer.load(); } catch (e) { console.warn('Video load error:', e); }
-    videoFileName.textContent = data.fileName;
-    videoOverlay.classList.add('hidden');
-    isVideoLoaded = true;
 
     addSystemMessage(`${data.uploader} shared video: ${data.fileName}`);
 });
