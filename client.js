@@ -607,13 +607,33 @@ socket.on('loadRoomVideo', (data) => {
     console.log('📥 Receiving video from server...', data.fileName);
 
     // Load the video data from the server
-    videoSource.src = data.videoData;
-    videoPlayer.load();
+    // If server sent a data URL, extract mime and set the <source> type so the player knows the codec
+    if (typeof data.videoData === 'string' && data.videoData.startsWith('data:')) {
+        const m = data.videoData.match(/^data:([^;]+);base64,/);
+        if (m && m[1]) {
+            videoSource.type = m[1];
+        } else {
+            videoSource.removeAttribute('type');
+        }
+        videoSource.src = data.videoData;
+    } else {
+        // Otherwise assume it's a URL path
+        videoSource.removeAttribute('type');
+        videoSource.src = data.videoData;
+    }
+    // Reload player to pick up new source
+    try { videoPlayer.load(); } catch (e) { console.warn('Video load error:', e); }
     videoFileName.textContent = data.fileName;
     videoOverlay.classList.add('hidden');
     isVideoLoaded = true;
 
     addSystemMessage(`${data.uploader} shared video: ${data.fileName}`);
+});
+
+// Handle server-side upload assembly errors
+socket.on('videoUploadError', (data) => {
+    console.error('Video upload error from server:', data);
+    addSystemMessage(`❌ Video upload failed: ${data?.message || 'Unknown error'}`);
 });
 
 socket.on('loadLibraryVideo', (data) => {
