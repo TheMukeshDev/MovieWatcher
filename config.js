@@ -1,10 +1,12 @@
 // Configuration for deployment
+// Updated to point to the deployed Render URL by default.
 const config = {
-    // Use the current hostname for backend connection (works for any IP)
-    SOCKET_SERVER_URL: `http://${window.location.hostname}:3000`,
+    // Default Socket server URL for this deployment. You can override by editing this file
+    // or by setting window.APP_CONFIG before loading client.js.
+    SOCKET_SERVER_URL: 'https://moviewatcher-26b7.onrender.com',
 
     // Production mode check
-    IS_PRODUCTION: false
+    IS_PRODUCTION: true
 };
 
 // Make config available globally

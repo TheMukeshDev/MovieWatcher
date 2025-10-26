@@ -19,4 +19,5 @@ services:
       - key: NODE_ENV
         value: production
       - key: ALLOWED_ORIGINS
-        value: "*"
+        # Restrict CORS to the deployed frontend URL for this Render deployment
+        value: "https://moviewatcher-26b7.onrender.com"
