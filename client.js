@@ -1,6 +1,7 @@
 // Socket.IO connection
-// Use config for server URL (supports both local and production)
-const socket = io(window.APP_CONFIG?.SOCKET_SERVER_URL || 'http://localhost:3000', {
+// Use config for server URL (supports both local and production). Default to current origin so the
+// app works when deployed behind a platform-provided URL.
+const socket = io(window.APP_CONFIG?.SOCKET_SERVER_URL || window.location.origin, {
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionDelay: 1000,
@@ -79,7 +80,7 @@ console.log('- Browser:', navigator.userAgent.match(/(Chrome|Firefox|Safari|Edge
 
 // Warn user if screen sharing won't work due to security context
 if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    console.warn('⚠️ Screen sharing may not work when accessing via IP address. Use localhost:3000 for full functionality.');
+    console.warn('⚠️ Screen sharing may require a secure context (HTTPS) or localhost. Consider serving over HTTPS or using a secure origin for full functionality.');
 }
 
 // Join/Create Room
@@ -99,7 +100,7 @@ joinRoomBtn.addEventListener('click', () => {
     }
 
     if (!socket.connected) {
-        alert('Not connected to server! Please access the app via http://localhost:3000');
+        alert(`Not connected to server! Ensure the front-end can reach the Socket server (checked ${window.location.origin}). If your Socket server is hosted at a different origin set window.APP_CONFIG.SOCKET_SERVER_URL before loading the client.`);
         return;
     }
 
@@ -338,7 +339,7 @@ async function startScreenShare() {
     try {
         // Check if we're on a secure context (required for screen sharing)
         if (!window.isSecureContext && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-            alert('❌ Screen Sharing Requires Secure Connection\n\n⚠️ You are accessing via IP address (10.168.144.228:3000)\n\n✅ To use screen sharing, access the site via:\n• http://localhost:3000 (on this device)\n• Or setup HTTPS\n\n💡 All other features work normally!');
+            alert(`❌ Screen Sharing Requires Secure Connection\n\n⚠️ Screen sharing requires a secure origin (HTTPS) or localhost.\n\n✅ To use screen sharing:\n• Serve the app over HTTPS, or\n• Open the app on the machine running the browser using localhost (${window.location.origin.replace(/:\d+$/, '') || 'localhost'})\n\n💡 All other features work normally.`);
             return;
         }
 
@@ -414,11 +415,11 @@ async function startScreenShare() {
             addSystemMessage('Screen sharing cancelled');
         } else if (error.name === 'TypeError' || error.message.includes('getDisplayMedia')) {
             // API not available
-            alert('❌ Screen Sharing Not Available\n\n⚠️ You are accessing via IP: 10.168.144.228:3000\n\n✅ For screen sharing, please use:\n• http://localhost:3000 (on this computer)\n\n💡 Or access from Chrome/Edge latest version\n\nNote: Video upload and library still work!');
+            alert(`❌ Screen Sharing Not Available\n\n⚠️ Screen sharing may be blocked or unavailable on this origin (${window.location.origin}).\n\n✅ Try one of the following:\n• Open the app from localhost on this device, e.g. http://localhost:${location.port || '3000'}\n• Serve the site over HTTPS\n• Use a modern browser (Chrome, Edge, Firefox latest)\n\nNote: Video upload and library functionality should still work.`);
         } else if (error.name === 'NotSupportedError') {
-            alert('❌ Screen Sharing Not Supported\n\nThis might be because:\n• You\'re accessing via IP address instead of localhost\n• Browser security restrictions\n\n✅ Try accessing via:\nhttp://localhost:3000');
+            alert('❌ Screen Sharing Not Supported\n\nThis might be because you are on an insecure origin or the browser does not support getDisplayMedia. Try opening the app from localhost or enabling HTTPS.');
         } else {
-            alert(`❌ Screen Sharing Failed\n\nError: ${error.message}\n\n🔧 Troubleshooting:\n✓ Use Chrome, Edge, or Firefox (latest)\n✓ Grant permission when prompted\n✓ Select a screen/window to share\n✓ Access via localhost:3000 for best results\n\n💡 If on another device, try uploading video instead!`);
+            alert(`❌ Screen Sharing Failed\n\nError: ${error.message}\n\n🔧 Troubleshooting:\n✓ Use Chrome, Edge, or Firefox (latest)\n✓ Grant permission when prompted\n✓ Select a screen/window to share\n✓ Serve the app from a secure origin (HTTPS) or localhost for best results\n\n💡 If on another device, try uploading video instead!`);
         }
     }
 }
@@ -805,7 +806,7 @@ function updateConnectionStatus(isConnected) {
         statusElement.innerHTML = '✅ Connected to server - Ready to join!';
     } else {
         statusElement.className = 'connection-status disconnected';
-        statusElement.innerHTML = '⚠️ Not connected to server - Make sure you\'re accessing <strong>http://localhost:3000</strong>';
+        statusElement.innerHTML = `⚠️ Not connected to server - Make sure the client can reach the Socket server (same origin as the app: <strong>${location.origin}</strong>) or set <code>window.APP_CONFIG.SOCKET_SERVER_URL</code> to your server URL.`;
     }
 }
 

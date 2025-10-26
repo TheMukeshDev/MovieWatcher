@@ -5,6 +5,13 @@ const server = http.createServer(app);
 const { Server } = require('socket.io');
 
 // CORS configuration for GitHub Pages and other frontends
+// Configure Socket.IO. Make allowed origins configurable via ALLOWED_ORIGINS env var
+// ALLOWED_ORIGINS can be a comma-separated list (e.g. "https://example.com,https://app.example.com").
+// If not set, allow all origins which is convenient for generic hosting; set appropriately for production.
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)
+    : '*';
+
 const io = new Server(server, {
     maxHttpBufferSize: 1024 * 1024 * 1024, // 1GB buffer for faster chunks
     pingTimeout: 60000,
@@ -13,13 +20,7 @@ const io = new Server(server, {
     upgradeTimeout: 30000,
     perMessageDeflate: false, // Disable compression for speed
     cors: {
-        origin: [
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            'https://*.github.io', // Allow all GitHub Pages domains
-            /\.github\.io$/, // Regex pattern for GitHub Pages
-            '*' // Allow all origins (remove in production for security)
-        ],
+        origin: allowedOrigins,
         methods: ['GET', 'POST'],
         credentials: true
     }
@@ -517,25 +518,11 @@ function updateRoomUsers(roomId, socketId, username, action) {
 
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
-    const os = require('os');
-    const networkInterfaces = os.networkInterfaces();
-    let localIP = 'localhost';
-
-    // Get local network IP
-    Object.keys(networkInterfaces).forEach((interfaceName) => {
-        networkInterfaces[interfaceName].forEach((iface) => {
-            if (iface.family === 'IPv4' && !iface.internal) {
-                localIP = iface.address;
-            }
-        });
-    });
-
-    console.log(`🎬 Watch Party server running!`);
-    console.log(`\n📱 Access on this device:`);
-    console.log(`   http://localhost:${PORT}`);
-    console.log(`\n🌐 Access from other devices on your network:`);
-    console.log(`   http://${localIP}:${PORT}`);
-    console.log(`\n✨ Share this URL with friends to watch together!\n`);
+    console.log(`🎬 Watch Party server running on port ${PORT}`);
+    // Helpful note for local development
+    if (!process.env.CI && process.env.NODE_ENV !== 'production') {
+        console.log(`🧪 Local dev: visit ${process.env.LOCAL_ORIGIN || `http://localhost:${PORT}`} in your browser`);
+    }
 });
 
 // Graceful shutdown

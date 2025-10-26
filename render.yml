@@ -1,0 +1,22 @@
+# Render service configuration for MovieWatcher
+# Deploy this Node web service on Render.com
+# Notes:
+# - The Socket server will use process.env.PORT provided by the platform.
+# - You can set ALLOWED_ORIGINS env var on Render to restrict CORS (comma-separated list).
+
+services:
+  - type: web
+    name: MovieWatcher
+    env: node
+    plan: free
+    branch: main
+    # Install dependencies and build (if needed)
+    buildCommand: "npm install"
+    # Start command uses npm start (server.js is the main entry)
+    startCommand: "npm start"
+    # Helpful environment variables (set in Render dashboard as needed)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: "*"
